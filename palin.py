@@ -3,7 +3,7 @@ anad = []
 palin_anad = []
 with open('all_with_fatverb.txt', encoding='utf8') as f:
     lines = f.readlines()
-    clean_lines = [line.strip().replace('"','').replace("'",'') for line in lines]
+    clean_lines = [line.strip().replace('"','').replace("'",'').replace('ך','כ').replace('ם','מ').replace('ן','נ').replace('ף','פ').replace('ץ','צ') for line in lines]
     clean_lines_set = set(clean_lines)
     for line, clean in zip(lines, clean_lines):
         if clean==clean[::-1]:
