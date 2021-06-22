@@ -1,0 +1,266 @@
+'\" t
+.\" Copyright (c) 2001-2017, Nadav Har'El and Dan Kenigsberg
+.TH hspell 3 "24 June 2017" "Hspell 1.4" "Ivrix"
+.SH NAME
+hspell \- Hebrew spellchecker (C API)
+.SH SYNOPSIS
+.B #include <hspell.h>
+.PP
+\fBint hspell_init(struct dict_radix **\fRdictp\fB, int \fRflags\fB);\fR
+.PP
+\fBvoid hspell_uninit(struct dict_radix *\fRdictp\fB);\fR
+.PP
+\fBint hspell_check_word(struct dict_radix *\fRdict\fB, const char *\fRword\fB, int *\fRpreflen\fB);\fR
+.PP
+\fBvoid hspell_trycorrect(struct dict_radix *\fRdict\fB, const char *\fRword\fB, struct corlist *\fRcl\fB);\fR
+.PP
+\fBint corlist_init(struct corlist *\fRcl\fB);\fR
+.PP
+\fBint corlist_free(struct corlist *\fRcl\fB);\fR
+.PP
+\fBint corlist_n(struct corlist *\fRcl\fB);\fR
+.PP
+\fBchar *corlist_str(struct corlist *\fRcl\fB, int \fRi\fB);\fR
+.PP
+\fBunsigned int hspell_is_canonic_gimatria(const char *\fRword\fB);\fR
+.PP
+\fRtypedef int hspell_word_split_callback_func(const char *word, const char *baseword, int preflen, int prefspec);\fR
+.PP
+\fBint hspell_enum_splits(struct dict_radix *\fRdict\fB, const char *\fRword\fB, hspell_word_split_callback_func *\fRenumf\fB);\fR
+.PP
+\fBvoid hspell_set_dictionary_path(const char *\fRpath\fB);\fR
+.PP
+\fBconst char *hspell_get_dictionary_path(void);\fR
+.SH "DESCRIPTION"
+This manual describes the C API of the Hspell Hebrew spellchecker. Please
+refer to
+.BR hspell (1)
+for a description of the Hspell project, its spelling
+standard, and how it works.
+
+The
+.B hspell_init()
+function must be called first to initialize the Hspell library. It sets
+up some global structures (see CAVEATS section) and then reads the
+necessary dictionary files (whose places are fixed when the library is
+built). The
+.I 'dictp'
+parameter is a pointer to a
+.I struct dict_radix*
+object, which is modified to point to a newly allocated dictionary.
+A typical
+.B hspell_init()
+call therefore looks like
+
+   struct dict_radix *dict;
+   hspell_init(&dict, flags);
+
+Note that the (struct dict_radix*) type is an opaque pointer \- the library user
+has no access to the separate fields in this structure.
+
+The
+.I 'flags'
+parameter can contain a bitwise or'ing of several flags that modify
+Hspell's default behavior; Turning on HSPELL_OPT_HE_SHEELA allows Hspell
+to recognize the interrogative He prefix (he ha-she'ela). HSPELL_OPT_DEFAULT
+is a synonym for turning on no special flag, i.e., it evaluates to 0.
+
+.B hspell_init()
+returns 0 on success, or negative numbers
+on errors. Currently, the only error is \-1, meaning the dictionary files
+could not be read.
+
+The
+.B hspell_uninit()
+function undoes the effects of
+.BR hspell_init() ,
+freeing any memory that was allocated during initialization.
+
+The
+.B hspell_check_word()
+function checks whether a certain word is a correct Hebrew word (possibly
+with prefix particles attached in a syntacticly-correct manner). 1 is
+returned if the word is correct, or 0 if it is incorrect.
+
+The
+.I 'word'
+parameter should be a single Hebrew word, in the iso8859-8 encoding,
+possibly containing the ASCII quote or double-quote characters (signifying
+the geresh and gershayim used in Hebrew for abbreviations,
+acronyms, and a few foreign sounds). If the calling programs works with
+other encodings, it must convert the word to iso8859-8 first. In particular
+cp1255 (the MS-Windows Hebrew encoding) extensions to iso8859-8 like niqqud
+characters, geresh or gershayim, are currently not recognized and must be
+removed from the word prior to calling
+.BR hspell_check_word() .
+
+Into the
+.I 'preflen'
+parameter, the function writes back the number of characters it recognized
+as a prefix particle \- the rest of the 'word' is a stand-alone word.
+Because Hebrew words typically can be read in several different ways, this
+feature (of getting just one prefix from one possible reading) is usually
+not very useful, and it is likely to be removed in a future version.
+
+The
+.B hspell_enum_splits()
+function provides a way to get all possible splitting of the given
+.I 'word'
+into an optional prefix particle and a stand-alone word.
+For each possible (and legal, as some words cannot accept certain prefixes)
+split, a user-defined callback function is called. This callback function
+is given the whole word, the length of the prefix, the stand-alone word,
+and a bitfield which describes what types of words this prefix can get.
+Note that in some cases, a word beginning with the letter waw gets this
+waw doubled before a prefix, so sometimes strlen(word)!=strlen(baseword)+preflen.
+
+The
+.B hspell_trycorrect()
+tries to find a list of possible corrections for an incorrect word.
+Because in Hebrew the word density is high (a random string of
+letters, especially if short, has a high probability of being a correct
+word), this function attempts to try corrections based on the assumption
+of a spelling error (replacement of letters that sound alike, missing or
+spurious immot qri'a), not typo (slipped finger on the keyboard, etc.) -
+see also CAVEATS.
+
+.B hspell_trycorrect()
+returns the correction list into a structure of type \fIstruct corlist\fR.
+This structure must be first allocated with a call to
+.B corlist_init()
+and subsequently freed with
+.BR corlist_free() .
+The
+.B corlist_n()
+macro returns the number of words held in an allocated corlist, and
+.B corlist_str()
+returns the i'th word. Accordingly, here is an example usage of
+.BR hspell_trycorrect() :
+
+   struct corlist cl;
+   printf ("Found misspelled word %s. Possible corrections:\\n", w);
+   corlist_init (&cl);
+   hspell_trycorrect (dict, w, &cl);
+   for (i=0; i<corlist_n(&cl); i++) {
+       printf ("%s\\n", corlist_str(&cl, i));
+   }
+
+The
+.B hspell_is_canonic_gimatria()
+function checks whether the given word is a
+.I canonic
+gimatria - i.e., the proper way to write in gimatria the number it
+represents. The caller might want to accept canonic gimatria as
+proper Hebrew words, even if
+.B hspell_check_word()
+previously reported such word to be a non-existent word.
+.B hspell_is_canonic_gimatria()
+returns the number represented as
+gimatria in 'word' if it is indeed proper gimatria (in canonic form),
+or 0 otherwise.
+
+.B hspell_init()
+normally reads the dictionary files from a path compiled
+into the library. This makes sense when the library's code and the
+dictionaries are distributed together, but in some scenarios the library
+user might want to use the Hspell dictionaries that are already present
+on the system in an arbitrary path. The function
+.B hspell_set_dictionary_path()
+can be used to set this path, and should
+be used before calling
+.BR hspell_init() .
+The given path is that of the word list, and other input files have that
+path with an appended prefix.
+.B hspell_get_dictionary_path()
+can be used to find the current path. On many installations, this defaults
+to "/usr/local/share/hspell/hebrew.wgz".
+
+.SH "LINKING"
+On most systems, the Hspell library is compiled to use the Zlib library
+for reading the compressed dictionaries. Therefore, a program linking with
+the Hspell library must also be linked with the Zlib library (usually, by
+adding "-lz" to the compilation line).
+
+Programs that use
+.I autoconf
+to search for the Hspell library, should remember to tell AC_CHECK_LIB
+to also link with the -lz library when checking for -lhspell.
+
+.SH CAVEATS
+While the API described here has been stable for years, it may change
+in the future. Users are encouraged to compare the values of the integer
+macros
+.B HSPELL_VERSION_MAJOR
+and
+.B HSPELL_VERSION_MINOR
+to those
+expected by the writer of the program. A third macro,
+.B HSPELL_VERSION_EXTRA
+contains a string which can describe subrelease modifications (e.g., beta
+versions).
+
+The current Hspell C API is very low-level, in the sense that it leaves
+the user to implement many features that some users take for granted
+that a spell-checker should provide. For example it doesn't provide any
+facilities for a user-defined personal dictionary. It also has separate
+functions for checking valid Hebrew words and valid gimatria, and no function
+to do both. It is assumed that the caller - a bigger spell-checking library
+or word processor (for example), will already have these facilities. If not,
+you may wish to look at the sources of
+.BR hspell (1)
+for an example implementation.
+
+Currently there is no concept of separate Hspell "contexts" in an application.
+Some of the context is now global for the entire application: currently, a
+single list of legal prefix-particles is kept, and the dictionary read by
+.B hspell_init()
+is always read from the global default place. This may
+be solved in a later version, e.g., by switching to an API like:
+
+   context = hspell_new_context();
+   hspell_set_dictionary_path(context, "/some/path/hebrew.wgz");
+   hspell_init(context, flags);
+   ...
+   hspell_check_word(context, word, preflenp);
+
+Note that despite the global context mentioned above, after initialization
+all functions described here are
+.IR thread-safe ,
+because they only read the dictionary data, not write to it.
+
+.B hspell_trycorrect()
+is not as powerful as it could have been, with typos or certain kinds of
+spelling mistakes not giving useful correction suggestions. Along with
+more types of corrections,
+.B hspell_trycorrect()
+needs a better way to order the likelihood of the corrections, as an
+unordered list of 100 corrections would be just as useful (or rather,
+useless) as none.
+
+In some cases of errors during
+.BR hspell_init() ,
+warning messages are printed to the standard errors. This is a bad thing for
+a library to do.
+
+There are too many CAVEATS in this manual.
+
+.SH "VERSION"
+The version of
+.B hspell
+described by this manual page is 1.4.
+.SH "COPYRIGHT"
+Copyright (C) 2000-2017, Nadav Har'El <nyh@math.technion.ac.il>
+and Dan Kenigsberg <danken@cs.technion.ac.il>.
+
+Hspell is free software, released under the GNU Affero General Public License
+(AGPL) version 3.
+Note that not only the programs in the distribution, but also the dictionary
+files and the generated word lists, are licensed under the AGPL.
+There is no warranty of any kind.
+
+See the LICENSE file for more information and the exact license terms.
+
+The latest version of this software can be found in
+.B http://hspell.ivrix.org.il/
+.SH "SEE ALSO"
+.BR hspell (1)

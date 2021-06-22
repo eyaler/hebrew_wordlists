@@ -1,0 +1,144 @@
+dnl Process this file with autoconf to produce Hspell's configure script.
+
+dnl "wolig.dat" is any file in the source directory, used to check we're in
+dnl the right directory.
+AC_INIT(wolig.dat)
+
+dnl this alows us to use $(MAKE) in the makefile, even if our make program
+dnl doesn't support this variable. This requires putting @SET_MAKE@ in the
+dnl Makefile.in
+AC_PROG_MAKE_SET
+
+AC_PROG_CC
+dnl AC_PROG_INSTALL
+
+dnl Hspell uses the "inline" keyword, always as "static inline". Some old C
+dnl compilers (such as the one on Solaris 8!) still don't have inline, so we
+dnl should just replace it by nothing (or use things like __inline__, if that's
+dnl available).
+AC_C_INLINE
+AC_C_CONST
+
+dnl Our hash-table code borrowed from TCL stores pointer values, but we want
+dnl to store there ints. So we need a type uintptr_t which is an integer
+dnl exactly the same size as a pointer. If we don't already have this type
+dnl (it is standard in ANSI C's stdint.h), autoconf will try to figure it
+dnl out.
+AC_TYPE_INTPTR_T
+
+dnl TODO: remove -g from CFLAGS and add -s to LDFLAGS
+
+AC_PATH_PROG([PERL], [perl])
+
+dnl Check for libraries.
+AC_CHECK_LIB([z],[gzread],
+ [AC_CHECK_HEADER([zlib.h],[AC_DEFINE(HAVE_ZLIB) LIBS="-lz $LIBS"],
+    [AC_MSG_RESULT([No Zlib header, defaulting to using pipes])])],
+ [AC_MSG_RESULT([No Zlib library, defaulting to using pipes])])
+
+dnl Allow the builder to enable or disable certain features of Hspell,
+dnl and/or build or not build certain things.
+dnl Make sure that after running configure with different features enabled,
+dnl "make clean" is done!
+
+AC_MSG_NOTICE([Checking features selected by user (see configure --help)...])
+
+
+dnl Our TARGETS variable chooses what to compile. Some things are
+dnl optionally compiled depending on --enable-* paramters to configure.
+TARGETS="hebrew.wgz.sizes hspell libhspell.a"
+AC_SUBST(TARGETS)
+
+dnl "fatverb" optional feature: (--enable-fatverb)
+dnl Determines whether or not to build about 150,000 additional rare verb
+dnl forms (known as objective kinuyim).
+AC_ARG_ENABLE([fatverb],
+	AC_HELP_STRING([--enable-fatverb],[Allow "objective kinuyim" on
+	  all forms of verbs. Because this adds as many as 130,000 correct
+	  but rarely-used (in modern texts) inflections, a compile-time option
+          is present for enabling or disabling these forms. The default in
+	  this version is not to enable them.]),
+	[ac_opt_fatverb=$enable_fatverb], [ac_opt_fatverb=no])
+
+if test x$ac_opt_fatverb = xyes
+then
+	AC_MSG_NOTICE([Feature fatverb enabled (adding objective kinuyim to verbs).])
+	SEDCMD='s/\+//'
+else
+	AC_MSG_NOTICE([Feature fatverb disabled (no objective kinuyim to verbs).])
+	SEDCMD='/\+/d'
+fi
+AC_SUBST(SEDCMD)
+
+dnl "linginfo" optional feature: (--enable-linginfo)
+dnl Include a full morphological analyzer in "hspell -l". Note that this
+dnl slows down the build and makes the installation about 4 times larger,
+dnl but it doesn't slow Hspell if "-l" isn't used.
+
+AC_ARG_ENABLE([linginfo],
+	AC_HELP_STRING([--enable-linginfo],[Include a full morphological
+          analyzer in "hspell -l", explaining how each correct word could
+          be derived. This slows down the build and makes installation about
+	  4 times larger, but doesn't slow Hspell if "-l" isn't used.]),
+	[ac_opt_linginfo=$enable_linginfo], [ac_opt_linginfo=no])
+
+EXTRAOBJECTS=
+if test x$ac_opt_linginfo = xyes
+then
+	AC_MSG_NOTICE([Feature linginfo enabled (morphological analyzer).])
+	AC_DEFINE(USE_LINGINFO)
+	EXTRAOBJECTS="linginfo.o"
+# note that linginfo_data should be done first, because it currently builds
+# some of the normal things (like hebrew.wgz) in a different way (using
+# pack-desc, not pmerge). This is ugly, and should be fixed.
+	TARGETS="linginfo_data $TARGETS"
+else
+	AC_MSG_NOTICE([Feature linginfo disabled (no morphological analyzer).])
+fi
+AC_SUBST(EXTRAOBJECTS)
+
+dnl "shared" optional feature: (--enable-shared)
+dnl Build a shared library version of libhspell (in addition to the static
+dnl library), and compile the hspell executable to use this shared library.
+dnl Note that currently, this will only work properly on Linux and gcc (we
+dnl do not correctly build shared libraries on different systems).
+
+AC_ARG_ENABLE([shared],
+	AC_HELP_STRING([--enable-shared],[Build a shared-library version of
+          libhspell, in addition to the static library. Build the hspell
+          executable using this shared library.]),
+	[ac_opt_shared=$enable_shared], [ac_opt_shared=no])
+
+if test x$ac_opt_shared = xyes
+then
+	AC_MSG_NOTICE([Shared library building enabled.])
+	HSPELL_LIB="libhspell.so.0"
+else
+	AC_MSG_NOTICE([Shared library building disabled.])
+	HSPELL_LIB="libhspell.a"
+fi
+AC_SUBST(HSPELL_LIB)
+
+dnl "test" optional feature: (--enable-test)
+dnl Compile a testing binary. Currently the only thing that this does is
+dnl to set the default dictionary directory to the current directory,
+dnl instead of the normal $SHARE/hebrew.wgz location.
+
+AC_ARG_ENABLE([test],
+	AC_HELP_STRING([--enable-test],[Compile testing binary, that uses
+          a dictionary in the current directory instead of the installed
+          one. Not recommended for anyone but Hspell developers.]),
+	[ac_opt_test=$enable_test], [ac_opt_test=no])
+
+
+if test x$ac_opt_test = xyes
+then
+	AC_MSG_NOTICE([Feature test enabled (USES DICTIONARY IN CURRENT DIRECTORY!!!).])
+	DICTBASE='./hebrew.wgz'
+else
+	DICTBASE='$(SHARE)/hebrew.wgz'
+fi
+AC_SUBST(DICTBASE)
+
+
+AC_OUTPUT(Makefile)

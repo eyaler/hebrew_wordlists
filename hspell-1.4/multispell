@@ -1,0 +1,357 @@
+#!/usr/bin/perl -w
+
+# Multispell is a program that lets your editor talk to two spellers
+# simultaneously. It launches two speller programs, one Hebrew (hspell),
+# one English (ispell), and merges their results.
+#
+# Public Domain
+#
+# Please report bugs to: Mooffie <mooffie@typo.co.il>
+#
+# TODO
+# - UTF-8 support (+cmdline opt to select offsets type: byte-based
+#   or char-based)
+# - intl support. e.g.:
+#	multispell -T utf8 --ispell-encoding=koi8-r
+#	or:
+#	multispell -T utf8 --ispell-cmd="multispell --ispell-cmd=..." ...
+# - handle aspell's '$$' ?
+
+use strict;
+use Getopt::Long;
+use IPC::Open2;
+use IO::Handle;
+
+# options to pass to both hspell and ispell:
+my @common_opts	    = qw/ --dummy /;
+# options to pass to hspell only:
+my @hspell_opts	    = qw/ -n --notes --verbose /;
+my $hspell_cmd	    = "hspell";
+my $ispell_cmd	    = "ispell";
+my $remove_niqqud   = 0;
+
+my $debug	    = 0;
+my $debug_file	    = "$ENV{HOME}/multispell-dbg.txt";
+my $rc_file	    = "$ENV{HOME}/.multispellrc";
+my $rc_file_global  = "/etc/multispellrc";
+
+my ($hsplrd, $hsplwr); # pipes to hspell
+my ($isplrd, $isplwr); # pipes to ispell
+
+my $VERSION = "0.4a";
+
+sub DBG {
+    if ($debug) {
+	my $msg = shift;
+	print DBGFL $msg;
+    }
+}
+
+sub help {
+    print <<EOM;
+SYNOPSIS:
+    multispell [multispell-options] [hspell-options] [ispell-options]
+
+DESCRIPTION:
+    Multispell is a program that lets your editor talk to two spellers
+    simultaneously. It launches two speller programs, one Hebrew (hspell),
+    one English (ispell), and merges their results.
+
+    Currently the editor can talk with multispell only in ISO-8859-8
+    or CP1255.
+    
+VALID MULTISPELL-OPTIONS:
+    --debug
+	    Write debug info to ~/multispell-dbg.txt
+    
+    --hspell-cmd PROG
+	    Use PROG instead of "$hspell_cmd"
+    
+    --ispell-cmd PROG
+	    Use PROG instead of "$ispell_cmd"
+
+    --remove-niqqud
+	    Erase words containing CP1255's niqqud (Hebrew points),
+	    and convert maqaf (0xCE) to ASCII dash.
+
+    --drop OPTNAME
+	    Don't pass option OPTNAME to ispell or to hspell. It's
+	    useful in ~/.multispellrc when you want to drop an option
+	    the editor is determined to pass. You can specify multiple
+	    options, separated by commas. If the option requires an
+	    argument, append ':' to its name.
+
+    --help -h
+	    Print this message
+
+FILES:
+    /etc/multispellrc
+	    Additional command-line options to use. These _override_
+	    the ones specified on the command-line.
+
+    ~/.multispellrc
+	    If found, used _instead_ of /etc/multispellrc
+
+EOM
+    exit;
+}
+
+sub load_spellers
+{
+    sub load_speller {
+	my ($cmd) = @_;
+	local (*RD, *WR);
+	DBG("Loading: $cmd\n");
+	open2(*RD, *WR, $cmd);
+	my $signature = <RD>;
+	if (!$signature || $signature !~ /^@\(#\)/) {
+	    DBG("Loading failed (please check stderr)\n");
+	    die "Can't load $cmd";
+	} else {
+	    DBG("Loaded OK: $signature");
+	}
+	autoflush WR 1;
+	return (*RD, *WR);
+    }
+
+    ($hsplrd, $hsplwr) = load_speller($hspell_cmd);
+    ($isplrd, $isplwr) = load_speller($ispell_cmd);
+}
+
+sub print_signature {
+    print "@(#) International Ispell Version 3.1.20 ".
+	    "(but really multispell $VERSION)\n";
+}
+
+# do_loop() is the crux of the program. it reads ispell-a requests
+# from stdin, sends them to ispell and/or hspell, and writes the merged
+# replies to stdout.
+
+sub do_loop {
+    my $heb_chars	 = '\xE0-\xFA';
+    my $niqqud_chars	 = '\xC0-\xCD\xCF';
+    my $niqqud_heb_chars = $heb_chars . $niqqud_chars;
+
+    print_signature();
+
+    while (my $line = <STDIN>) {
+	DBG(">$line");
+	my @replies = ();
+
+	# if the last line of the input does not end in newline, add it ourselves
+	# so that hspell doesn't hang waiting for it.
+	# e.g.: echo -n word | multispell -a
+	$line .= "\n" if $line !~ /\n/;
+
+	# a workaround for some versions of Aspell that ignore empty input lines.
+	# see http://ivrix.org.il/bugzilla/show_bug.cgi?id=3
+	$line = " \n" if $line eq "\n";
+
+	if ($remove_niqqud) {
+	    # erase words containing CP1255's niqqud (hebrew points)
+	    $line =~ s/([$niqqud_heb_chars]+[$niqqud_chars][$niqqud_heb_chars]*)/
+			    ' ' x length($1)/oeg;
+	    # convert maqaf to ASCII dash
+	    $line =~ tr/\xCE/-/;
+	}
+	
+	if ($line =~ /^[#!~@%+&*-]/) {
+	    if ($line =~ /^[@&*]/) {
+		# "@word" - ignore word.
+		# "*word" - add word to private dict.
+		# "&word" - ditto.
+		# We send hebrew words to hspell, otherwise to ispell
+		if ($line =~ /[$heb_chars]/o
+			|| $line eq "\@ActivateExtendedProtocol\n") {
+		    DBG("HSPL>$line");
+		    print $hsplwr $line;
+		} else {
+		    DBG("ISPL>$line");
+		    print $isplwr $line;
+		}
+	    } else {
+		DBG("IHSPL>$line");
+		print $hsplwr $line;
+		print $isplwr $line;
+	    }
+	    # this is a command, so we don't read replies.
+	} else {
+	    # words to spell-check.
+	    DBG("HSPL>$line");
+	    print $hsplwr $line;
+	    while (<$hsplrd>) {
+		DBG("HSPL<$_");
+		last if ! /\S/;
+		push @replies, $_;
+	    }
+	   
+	    # delete all heb words before sending to ispell
+	    $line =~ s/[$heb_chars]/ /og;
+	    DBG("ISPL>$line");
+	    print $isplwr $line;
+	    while (<$isplrd>) {
+		DBG("ISPL<$_");
+		last if ! /\S/;
+		push @replies, $_;
+	    }
+
+	    # We're about to sort the replies.
+	    # But first we need to take care of non-standard replies (like
+	    # spelling-hints). Such replies (so we believe) add information to
+	    # the last standard reply (e.g. spelling-hints explain the last
+	    # reported misspelled word), so we want to concatenate them with
+	    # that reply instead of sorting them as if they were independent.
+	    for (my $i = 1; $i <= $#replies; $i++) {
+		if ($replies[$i] =~ /^[^*+&?#-]/) { # non-standard?
+		    $replies[$i-1] .= $replies[$i];
+		    splice @replies, $i, 1;
+		    $i--;
+		}
+	    }
+
+	    # sort the replies
+	    sub getidx {
+		$_ = shift;
+		(/^[&?] \S+ \d+ (\d+)/ || /^# \S+ (\d+)/) ? $1 : 0;
+	    }
+	    @replies = sort { getidx($a) <=> getidx($b) } @replies;
+
+	    push @replies, "\n";
+	    DBG("<$_") foreach (@replies);
+	    print @replies;
+	}
+    }
+}
+
+# extract_options() takes a list of option names and extracts them and
+# their values from @ARGV.
+# For example, if we pass ('-n', '-d:', '-S') to this function, and @ARGV
+# is ('-i', '-nx', '-denglish', '-p'), it returns "-n -d english", and
+# @ARGV becomes ('-i', '-x', '-p').
+
+sub extract_options {
+    my @options = @_;
+    my %getopt_hash;
+    my $args = "";
+
+    foreach my $option (@options) {
+	$option =~ tr/-//d;
+	my $require_arg = ($option =~ s/:$/=s/);
+	$getopt_hash{$option} = sub {
+	    my ($optname, $optval) = @_;
+	    $optname = (length($optname) > 1 ? "--" : "-") . $optname;
+	    $args .= " $optname";
+	    $args .= " '$optval'" if $require_arg;
+	};
+    }
+    GetOptions(%getopt_hash);
+    return $args;
+}
+
+# tokenize_cmd_line() is used for parsing the RC files.
+# it takes a command line string, e.g.:
+#   -x --opt="one two" -i 'on"e" two'
+# and returns an array:
+#   ('-x', '--opt=one two', '-i', 'on"e" two')
+
+sub tokenize_cmd_line {
+    my $s = shift;
+    return  map {
+		s/['"]//;
+		s/['"]$//;
+		$_;
+	    } grep {
+		/\S/
+	    } split( /(
+		[^\s'"]*(?:'.*?'|".*?") |
+		[^\s'"]+
+	    )/x , $s);
+}
+
+main: {
+    $| = 1;
+    Getopt::Long::Configure("bundling_override", "pass_through");
+    my $print_signature	= 0;
+    my $ispella_mode	= 0;
+    my $dictionary	= "";
+    my @drop_opts	= ();
+
+    # Applications use the '-d' option to select a dictionary.
+    # We don't want aspell to consider the locale when '-d' is not specified,
+    # because in most cases that's not what the user wants (e.g. he_IL), and,
+    # anyway, we can't represent most languages other than English in
+    # ISO-8859-8.
+    $ENV{'LC_ALL'} = 'C';
+
+    if (open(RC, $rc_file) || open(RC, $rc_file_global)) {
+	while (<RC>) {
+	    s/#.*//;
+	    push @ARGV, tokenize_cmd_line($_);
+	}
+	close(RC);
+    }
+
+    my @saved_argv = @ARGV;
+    GetOptions('debug'		=> \$debug,
+	       'hspell-cmd=s'	=> \$hspell_cmd,
+	       'ispell-cmd=s'	=> \$ispell_cmd,
+	       'drop=s'		=> \@drop_opts,
+	       'remove-niqqud'	=> \$remove_niqqud,
+	       'remove-niqud'	=> \$remove_niqqud,
+	       'remove-nikud'	=> \$remove_niqqud,
+	       'd=s'		=> \$dictionary,
+	       'v'		=> \$print_signature,
+	       'a'		=> \$ispella_mode,
+	       'i'		=> sub { ; }, # silently eat up hspell's '-i'
+	       'help|h|?'	=> sub { help(); }
+	      ) or help();
+
+    if ($debug) {
+	open(DBGFL, ">>$debug_file");
+	autoflush DBGFL 1;
+	DBG("\n\n" . "-" x 75 . "\n");
+	DBG("I was invoked: $0");
+	DBG(" '$_'") for @saved_argv;
+	DBG("\n");
+	DBG("On: " . localtime() . "\n");
+	# According to SUSV, the following 'ps' command is portable,
+	# but I don't want to take risks, so I run it only on linux.
+	if ($^O =~ /linux/i) {
+	    my $PPID = getppid();
+	    DBG("By: " . `ps -p $PPID -o args=`);
+	}
+    }
+
+    if ($print_signature) {
+	print_signature();
+	exit;
+    }
+
+    if (!$ispella_mode) {
+	die "You can only use this speller in \"pipe-mode\" " .
+	    "(using the '-a' option)\n";
+    }
+    
+    # If $dictionary contains "hebrew", it's probably something
+    # kspell or emacs passed. We ignore it since ispell knows
+    # no such dictionary.
+    if ($dictionary && $dictionary !~ /hebrew/i) {
+	push @ARGV, '-d', $dictionary;
+    }
+
+    @drop_opts = split(/,/, join(",", @drop_opts));
+    extract_options(@drop_opts) if @drop_opts;
+    my $common_opts = extract_options(@common_opts);
+    my $hspell_opts = extract_options(@hspell_opts) . $common_opts;
+    my $ispell_opts = "@ARGV" . $common_opts;
+
+    $hspell_cmd .= " -a $hspell_opts";
+    $ispell_cmd .= " -a $ispell_opts";
+    
+    load_spellers();
+    DBG("\n");
+    do_loop();
+}
+
+# vim:ts=8:sts=4:sw=4:
+

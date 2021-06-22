@@ -1,0 +1,17 @@
+#!/usr/bin/awk -f
+
+NR == 1 {
+	last=$1
+	printf("%s",$1)
+	next
+}
+{
+	for(i=1;i<=length(last);i++){
+		if(substr(last,1,i)!=substr($1,1,i)){
+			break;
+		}
+	}
+	back=length(last)-i+1;
+	printf("%d%s",back,substr($1,i));   # decimal digits, for now...
+	last=$1
+}

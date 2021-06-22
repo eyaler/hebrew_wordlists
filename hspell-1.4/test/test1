@@ -1,0 +1,89 @@
+#!/bin/sh
+# Test 1: verify that each and every word in the "words-correct" file is
+# considered correct, and each and every word in "words-wrong" is considered
+# incorrect. The various subtests use different spellchecking runtimes
+# (hspell, aspell, hunspell) using the compiled data in the current directory.
+#
+# Important: run "make hspell he.rws" first.
+
+# NOTE: This test should be run inside the hspell compilation directory,
+# not in TESTDIR itself.
+DIR=test
+
+TMPLOG=/tmp/test1.log
+function dotest(){
+	# Run the given "ispell -a"-like command and expect all the words to
+	# be correct, or all incorrect, as requested.
+	local TESTNAME="$1"
+	local FILE="$2"
+	local SECHEAD="$3"
+	shift 3
+	if test ! -s "$FILE"
+	then
+		return
+	fi
+	echo -n "Test 1/$TESTNAME ($SECHEAD): "
+
+	"$@" < $FILE >$TMPLOG
+
+	nwords=`wc -l <$FILE`
+	nright=`grep -c '^[*+]' <$TMPLOG`
+	nwrong=`grep -c '^[&#]' <$TMPLOG`
+	case $SECHEAD in
+	+*)	 # all should be right
+		nall=$nright
+		nnone=$nwrong;;
+	-*)	 # all should be right
+		nall=$nwrong
+		nnone=$nright;;
+	*)
+		echo "TEST BUG: bad header $SECHEAD"
+		return;;
+	esac
+	if test $nall -eq $nwords -a $nnone -eq 0
+	then
+		echo success.
+	else
+		echo "***** FAILED! *****"
+		#cat $TMPLOG
+	fi
+}
+
+TMPFILE=/tmp/test1.in
+function test_all(){
+	TESTNAME="$1"
+	shift
+	>$TMPFILE
+	SECHEAD=""
+	section=0
+	while read line
+	do
+		case $line in
+		[+-]*)
+			# end of previous section; check it
+			dotest "$TESTNAME/$section" "$TMPFILE" "$SECHEAD" "$@"
+			>$TMPFILE
+			SECHEAD="$line"
+			let section++
+			;;
+		*)
+			echo "$line" >>$TMPFILE
+			;;
+		esac
+	done
+	# end of previous section; check it
+	dotest "$TESTNAME/$section" "$TMPFILE" "$SECHEAD" "$@"
+	rm $TMPFILE
+}
+
+cat $DIR/test1.dat|
+test_all hspell	./hspell -Dhebrew.wgz -a
+
+cat $DIR/test1.dat|
+test_all aspell	aspell --dict-dir=. -d he.rws -a
+
+iconv -f iso-8859-8 -t utf-8 $DIR/test1.dat |
+test_all hunspell	hunspell -i utf-8 -d `pwd`/he -a
+
+#iconv -f iso-8859-8 -t utf-8 $DIR/test1.dat |
+#test_all doubleaffixcompress	hunspell -i utf-8 -d `pwd`/hunspell/new_he -a

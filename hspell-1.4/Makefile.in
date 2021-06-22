@@ -1,0 +1,350 @@
+# Hspell Makefile
+# Copyright (C) 2002-2015 Nadav Har'El and Dan Kenigsberg
+
+# A comment about parallel make:
+# Unfortunately, parallel make deals with rules with multiple targets in a way
+# I can only describe as "useless". If one rule has multiple targets, and
+# more than one of them appear as dependencies in other rules, parallel make
+# may run the rule more than once concurrently! To work around this problem,
+# we need to change every rule of the form:
+#	a b c:
+#		... create a b and c
+# to the form:
+#	a:
+#		... create a b and c
+#	b c: a
+# Now, the real rule will be run just once, because "a" will be created just
+# once. This workaround is used several times in the Makefile below.
+
+# Locale override:
+# Some of the things we do here (like sort), and Perl scripts we run can be
+# distracted by the user's locale setting, which are irrelevant - Hspell's
+# source and data are all in ISO-8859-8, and that has nothing to do with the
+# builder's choice of locale. So we need to override them. The best would
+# have been to do:
+#     export LANG=C
+#     export LC_ALL=C
+# But the "export" directive is only supported by Gnu make, so let's instead
+# redfine all the relevant LC_* variables the user might have set... Note that
+# the following only modified environment variables that were already exported
+# by the user - which is actually ok (but this makes us have to set all these
+# different variables).
+LANG=C
+LC_ALL=C
+LC_CTYPE=C
+LC_COLLATE=C
+
+# If making one of the intermediate targets failed in the middle delete it,
+# so the partially built output file doesn't look like a legitimate file
+# on the next "make" run.
+.DELETE_ON_ERROR:
+
+@SET_MAKE@
+
+# build and installation paths
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+
+DESTDIR =
+PREFIX = @prefix@
+BIN = @bindir@
+SHARE = @datadir@/hspell
+LIBEXEC = @libexecdir@/hspell
+MAN1 = @mandir@/man1
+MAN3 = @mandir@/man3
+LIBDIR = @libdir@
+INCLUDEDIR = @includedir@
+
+DICTBASE = @DICTBASE@
+
+PERL=@PERL@
+CC=@CC@
+
+DEFS=@DEFS@ -DDICTIONARY_BASE=\"$(DICTBASE)\"
+CFLAGS=@CFLAGS@
+LIBS=@LIBS@
+CPPFLAGS=@CPPFLAGS@
+LDFLAGS=@LDFLAGS@
+
+STRIP=strip
+
+.c.o:
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(DEFS) $<
+
+# For building a shared library (--enable-shared)
+%.lo: %.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(DEFS) -fPIC -DPIC -o $@ $<
+
+
+# Our TARGETS variable chooses what to compile. Some things are
+# optionally compiled depending on --enable-* paramters to configure.
+TARGETS = @TARGETS@
+all: $(TARGETS)
+
+# SEDCMD controls on whether objective-kinuyim - about 130,000 rare verb
+# forms - are left during build or removed. It is set to the appropriate
+# strings when "configure" is run (depending on whether --enable-fatverb
+# is given).
+SEDCMD=@SEDCMD@
+
+# EXTRAOBJECTS - for --enable-linginfo
+EXTRAOBJECTS=@EXTRAOBJECTS@
+
+clean:
+	rm -f wunzip wordlist.wgz shemp.dat \
+	      corlist.o dict_radix.o find_sizes.o gimatria.o \
+	      hspell.o tclHash.o hebrew.wgz hebrew.wgz.sizes \
+	      hebrew.wgz.prefixes shemp.hif shemp.dat \
+	      nouns.hif verbs.hif hspell find_sizes \
+	      prefixes.c libhspell.o libhspell.a hspell.exe \
+	      hebrew.wgz.desc hebrew.wgz.stems he_affix.dat \
+	      he.wl mk_he_affix linginfo.o mk_he_affix.o \
+	      hebrew.wgz.lingsizes.tmp dmask.c \
+	      spell-he.xpi he.dic he.aff README-he.txt \
+	      README_he_IL.txt he_IL.dic he_IL.aff he_IL.zip \
+	      specfilter.o specfilter he.rws libhspell.so.0 libhspell.so \
+	      dict_radix.lo gimatria.lo corlist.lo libhspell.lo linginfo.lo \
+	      he.xpi misc/dictionaries/he.dic misc/dictionaries/he.aff \
+	      misc/dictionaries/license.txt misc/dictionaries/README-he.txt
+
+distclean: clean
+	rm -f Makefile config.log config.status
+
+# On Windows, this would typically be set to hspell.exe
+HSPELL_EXECUTABLE=hspell
+
+install: all
+	test -d $(DESTDIR)$(BIN) || mkdir -m 755 -p $(DESTDIR)$(BIN)
+	$(STRIP) $(HSPELL_EXECUTABLE)
+	-rm -f $(DESTDIR)$(BIN)/$(HSPELL_EXECUTABLE)
+	cp $(HSPELL_EXECUTABLE) $(DESTDIR)$(BIN)/$(HSPELL_EXECUTABLE)
+	chmod 755 $(DESTDIR)$(BIN)/$(HSPELL_EXECUTABLE)
+	cp multispell $(DESTDIR)$(BIN)/multispell
+	chmod 755 $(DESTDIR)$(BIN)/multispell
+	test -d $(DESTDIR)$(SHARE) || mkdir -m 755 -p $(DESTDIR)$(SHARE)
+	cp hebrew.wgz hebrew.wgz.prefixes hebrew.wgz.sizes $(DESTDIR)$(SHARE)/
+	gzip -9n < spellinghints > $(DESTDIR)$(SHARE)/hebrew.wgz.hints
+	(cd $(DESTDIR)$(SHARE); chmod 644 hebrew.wgz hebrew.wgz.prefixes hebrew.wgz.sizes hebrew.wgz.hints)
+	test ! -f hebrew.wgz.stems || cp hebrew.wgz.stems hebrew.wgz.desc $(DESTDIR)$(SHARE)/
+	(cd $(DESTDIR)$(SHARE); test ! -f hebrew.wgz.stems || chmod 644 hebrew.wgz.stems hebrew.wgz.desc)
+	-rm -f $(DESTDIR)$(BIN)/hspell-i
+	-ln -s $(HSPELL_EXECUTABLE) $(DESTDIR)$(BIN)/hspell-i
+	test -d $(DESTDIR)$(MAN1) || mkdir -m 755 -p $(DESTDIR)$(MAN1)
+	cp hspell.1 $(DESTDIR)$(MAN1)/
+	chmod 644 $(DESTDIR)$(MAN1)/hspell.1
+	test -d $(DESTDIR)$(MAN3) || mkdir -m 755 -p $(DESTDIR)$(MAN3)
+	cp hspell.3 $(DESTDIR)$(MAN3)/
+	chmod 644 $(DESTDIR)$(MAN3)/hspell.3
+	test -d $(DESTDIR)$(LIBDIR) || mkdir -m 755 -p $(DESTDIR)$(LIBDIR)
+	cp libhspell.a $(DESTDIR)$(LIBDIR)/
+	chmod 644 $(DESTDIR)$(LIBDIR)/libhspell.a
+	test -d $(DESTDIR)$(INCLUDEDIR) || mkdir -m 755 -p $(DESTDIR)$(INCLUDEDIR)
+	cp hspell.h linginfo.h $(DESTDIR)$(INCLUDEDIR)/
+	chmod 644 $(DESTDIR)$(INCLUDEDIR)/hspell.h $(DESTDIR)$(INCLUDEDIR)/linginfo.h
+	test -f libhspell.so.0 && cp libhspell.so.0 $(DESTDIR)$(LIBDIR)/
+	test -f libhspell.so.0 && chmod 755 $(DESTDIR)$(LIBDIR)/libhspell.so.0
+	test -f libhspell.so.0 && ln -sf libhspell.so.0 $(DESTDIR)$(LIBDIR)/libhspell.so
+
+
+################################################
+# for creating an hspell distribution tar
+PACKAGE = hspell
+VERSION = 1.4
+DISTFILES = COPYING INSTALL LICENSE README WHATSNEW \
+	Makefile.in stats wunzip.c wzip \
+	hspell.1 \
+	wolig.pl wolig.dat biza-nouns.hif milot.hif extrawords.hif \
+	woo woo.dat biza-verbs.hif \
+	likelyerrors spellinghints \
+	corlist.c dict_radix.c \
+	dict_radix.h find_sizes.c gimatria.c hspell.c \
+	hspell.h libhspell.c gzbuffered.h \
+	pmerge PrefixBits.pl genprefixes.pl \
+	hash.h tclHash.c tclHash.h \
+        binarize-desc.pl pack-desc.pl linginfo.c linginfo.h \
+	multispell hspell.3 mk_he_affix.c configure.in configure \
+	misc/install.rdf.pre specfilter.c \
+	doc/niqqudless.odt test/test1 test/test1.dat
+
+DISTDIR = $(PACKAGE)-$(VERSION)
+
+distdir:
+	rm -rf ./$(DISTDIR)
+	mkdir -m 755 $(DISTDIR)
+	cp -a --parents $(DISTFILES) $(DISTDIR)
+	#cp -a $(DISTFILES) $(DISTDIR)
+# Note that Oron Peled suggested a more eleborate version that makes hard
+# links instead of copies:
+#	for file in $(DISTFILES); do \
+#		if test -d $$file; then \
+#			cp -pr $$file $(distdir)/$$file; \
+#		else \
+#			test -f $(distdir)/$$file \
+#			|| ln $$file $(distdir)/$$file 2> /dev/null \
+#			|| cp -p $$file $(distdir)/$$file || :; \
+#		fi; \
+#	done
+
+dist: distdir
+	tar zcvf $(DISTDIR).tar.gz $(DISTDIR)
+	rm -rf ./$(DISTDIR)
+
+############################################################################
+
+LIBOBJS=dict_radix.o gimatria.o corlist.o libhspell.o $(EXTRAOBJECTS)
+libhspell.a: $(LIBOBJS)
+	-rm -f $@
+	ar cr $@ $^
+	-ranlib $@
+
+# For building a shared library (--enable-shared)
+libhspell.so.0: $(LIBOBJS:.o=.lo)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -shared -Wl,-soname,libhspell.so.0 $^ -lz
+	ln -sf libhspell.so.0 libhspell.so
+
+HSPELL_LIB = @HSPELL_LIB@
+$(HSPELL_EXECUTABLE): hspell.o tclHash.o $(HSPELL_LIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(HSPELL_EXECUTABLE) hspell.o tclHash.o $(HSPELL_LIB) $(LIBS)
+
+# remember to update this dependency list once in a while...
+libhspell.o dict_radix.o find_sizes.o: dict_radix.h
+dict_radix.o linginfo.o: gzbuffered.h
+libhspell.o mk_he_affix.o: prefixes.c
+hspell.o: hash.h tclHash.h
+tclHash.o: tclHash.h
+corlist.o gimatria.o hspell.o libhspell.o: hspell.h
+hspell.o libhspell.o linginfo.o: linginfo.h hspell.h
+linginfo.o: dmask.c
+specfilter.o: prefixes.c
+
+libhspell.lo: prefixes.c
+
+prefixes.c: genprefixes.pl PrefixBits.pl
+	$(PERL) -w ./genprefixes.pl >prefixes.c
+
+find_sizes: find_sizes.o dict_radix.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o find_sizes find_sizes.o dict_radix.o $(LIBS)
+
+# *.hif, "hspell inflection format" files, list all the possible inflections
+# and information on how each word was derived. Some are the outputs of the
+# various word-list generators with the -d (derivation) option, and others are
+# pre-prepared files for exceptional inflections.
+# These files are pretty big - totalling over 16 MB - and can be easily
+# kept compressed. However, on modern computers, 16 MB temporary disk usage
+# is nothing to worry about, so we don't.
+HIFS=milot.hif extrawords.hif biza-verbs.hif biza-nouns.hif \
+	nouns.hif verbs.hif shemp.hif
+hif: $(HIFS)
+
+nouns.hif: wolig.pl wolig.dat
+	$(PERL) -w wolig.pl -d wolig.dat > $@
+verbs.hif: woo woo.dat
+	$(PERL) -w woo -d woo.dat | sed "$(SEDCMD)" > $@
+shemp.dat: verbs.hif
+shemp.hif: shemp.dat wolig.pl
+	$(PERL) -w wolig.pl -d shemp.dat > $@
+
+# hebrew.wgz contains all the words without any allowed-prefix hints.
+# hebrew.wgz.prefixes is the prefix hints (one byte per word, compressed).
+# hebrew.wgz.sizes contains the memory sizes that reading hebrew.wgz will
+#   require (this makes it easier for hspell to preallocate the needed sizes).
+hebrew.wgz: pmerge PrefixBits.pl $(HIFS)
+	cat $(HIFS) | ./pmerge -p hebrew.wgz.tmp | ./wzip | gzip -9n > hebrew.wgz
+	-rm -f hebrew.wgz.prefixes
+	gzip -9n < hebrew.wgz.tmp >hebrew.wgz.prefixes
+	-rm -f hebrew.wgz.tmp
+hebrew.wgz.prefixes: hebrew.wgz
+hebrew.wgz.sizes: hebrew.wgz find_sizes
+	gzip -dc hebrew.wgz | ./find_sizes >hebrew.wgz.sizes
+
+###################################### optional linginfo stuff ##############
+dolinginfo: linginfo_data $(HSPELL_EXECUTABLE)
+
+# In the following long rule, the complete list of all words with linguistic
+# details is concatanated and sent to binarize-desc.pl, which converts the
+# detailed information of each word into bitmap (called dmask), produces a
+# specifier that tells which prefixes are accepted with the word, and writes its
+# stem. Then the words list is sorted, packed (a-la uniq), and the output files
+# are written.
+# TODO: make pack-desc.pl/binarize-desc.pl and pmerge into just one script
+# (with options on whether to generate stems, etc.), and then we won't have
+# this ugliness of two different rules generating hebrew.wgz in two ways
+# (this is not only ugly, it's unsafe. If we use linginfo (--enable-linginfo
+# and change, say, "extrawords", and run "make hebrew.wgz" we will get the
+# wrong program run. A bare "make" does work properly because we stick an
+# extra target in front of the default targets.
+
+linginfo_data: hebrew.wgz.stems
+hebrew.wgz.stems: binarize-desc.pl PrefixBits.pl pack-desc.pl $(HIFS) find_sizes
+	for hif in $(HIFS); do \
+	cat $$hif; echo ---; done | \
+	$(PERL) binarize-desc.pl | \
+		sort -u | $(PERL) pack-desc.pl -p hebrew.wgz.prefixes.tmp \
+		-d hebrew.wgz.desc.tmp -s hebrew.wgz.stems.tmp \
+		-l hebrew.wgz.lingsizes.tmp | \
+		./wzip | gzip -9n > hebrew.wgz
+	gzip -dc hebrew.wgz | ./find_sizes >hebrew.wgz.sizes
+	cat hebrew.wgz.lingsizes.tmp >> hebrew.wgz.sizes
+	-rm -f hebrew.wgz.lingsizes.tmp
+	-rm -f hebrew.wgz.prefixes
+	gzip -9n < hebrew.wgz.prefixes.tmp >hebrew.wgz.prefixes
+	-rm -f hebrew.wgz.prefixes.tmp
+	-rm -f hebrew.wgz.desc
+	gzip -9n < hebrew.wgz.desc.tmp >hebrew.wgz.desc
+	-rm -f hebrew.wgz.desc.tmp
+	-rm -f hebrew.wgz.stems
+	gzip -9n < hebrew.wgz.stems.tmp >hebrew.wgz.stems
+	-rm -f hebrew.wgz.stems.tmp
+hebrew.wgz.desc hebrew.wgz.lingsizes.tmp dmask.c: hebrew.wgz.stems
+
+############################################################################
+# The following targets build packages of Hspell's word list in formats
+# required for other spell-checkers like Aspell and Hunspell. They are not
+# necessary for building the native Hspell spell-checker.
+############################################################################
+
+mk_he_affix.o: prefixes.c hspell.h
+
+# The "he_affix.dat" and "he.wl" files are the two files basic files which
+# together form an Aspell 0.6 dictionary.
+.PHONY: aspell
+aspell: he_affix.dat he.wl
+he.wl: mk_he_affix wunzip hebrew.wgz hebrew.wgz.prefixes specfilter
+	./mk_he_affix 0 he_affix.dat he.wl
+he_affix.dat: he.wl
+
+# Aspell runtime prefers a hash-table dump which can be mmapped, instead of
+# the textual word format:
+he.rws: he.wl
+	aspell --lang=he create master ./he.rws < he.wl
+
+# The "he.dic" and "he.aff" files are the two files basic files which
+# form a Hunspell dictionary; Hunspell is the multilingual spellchecker used
+# by Firefox, OpenOffice, and many other projects. The format of these files
+# is almost identical to the aspell format above, with only minor variations,
+# so the same "mk_he_affix" program generates both.
+.PHONY: hunspell
+hunspell: he.dic he.aff
+he.dic: mk_he_affix wunzip hebrew.wgz hebrew.wgz.prefixes specfilter
+	./mk_he_affix 1 he.aff he.dic
+he.aff: he.dic
+
+.PHONY: firefox
+firefox: he.xpi
+misc/install.rdf: misc/install.rdf.pre
+	sed 's/%VERSION%/$(VERSION)/' $< > $@
+
+he.xpi: misc/install.rdf he.dic he.aff
+	-mkdir misc/dictionaries
+	ln -f he.dic he.aff misc/dictionaries
+	ln -f COPYING misc/dictionaries/license.txt
+	ln -f README misc/dictionaries/README-he.txt
+	cd misc; zip ../$@ dictionaries/he.dic dictionaries/he.aff dictionaries/license.txt dictionaries/README-he.txt install.rdf
+
+############################################################################
+
+# A (very small number of) automated tests
+.PHONY: test
+test: hspell hebrew.wgz.sizes he.rws hunspell
+	test/test1

@@ -1,0 +1,48 @@
++ Correct words
+כלב
+חתול
+וכשהחתולים
+לישון
+כלביו
+שכלביו
++ Aprostrophe
+ג'ירפה
+וכשהג'ירפה
+מנכ"ל
++ Aprostrophe ending word
+סנדוויץ'
++ Ignore quotes
+"שלום
+שלום"
+"שלום"
+ה"שלום"
+ה"שלום
+- Wrong words
+דגדגחדשג
+הנדב
+ששכלבים
++ Correct prefix combinations
+הצרפתי
+הילד
+ועד
+הוועד
+וכשהוועד
+שוועד
+וועד
+והוועד
+- No word and prefix match
+שהכלביו
+שישון
+שהשמוע
+הכובשן
+ההלכנו
+הצרפת
+- Missing mandatory prefix, maqor
+ישון
+אדות
+- Missing mandatory prefix, maqor+kinuy
+בדותו
++ Stand alone prefixes
+ה
+ב
+וכשה

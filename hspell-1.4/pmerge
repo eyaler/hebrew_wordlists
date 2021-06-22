@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+# Copyright (C) 2002-2003 Nadav Har'El and Dan Kenigsberg
+#
+# Merges several dictionaries with prefix hints, into one dictionary with
+# or'ed prefix hints.
+# Usage: cat dict1 dict2 ... | pmerge -p prefixesout > wordsout
+
+use IO::File;
+use Carp;
+
+require "PrefixBits.pl";
+
+# "perl -w" warns about variables only used once (it assumes they are a
+# typo). This ugliness gets rid of this warning. Is there a more sensible way?
+($PS_L,$PS_B,$PS_VERB,$PS_NONDEF,$PS_IMPER,$PS_MISC)=
+	($PS_L,$PS_B,$PS_VERB,$PS_NONDEF,$PS_IMPER,$PS_MISC);
+
+use Getopt::Std;
+my %opts;
+# -p - output prefix file.
+if(!getopts('p:', \%opts)){
+	exit(1);
+}
+
+my $out_prefixes=$opts{p};
+
+my $specifier;
+my %specifiers;
+
+while(<>){
+	chomp;
+	#next if /---/;  # TODO: this isn't needed. remove it.
+	#s/-$//o; # TODO: dan added this. remove it.
+	s/\+ / /o; # The Makefile was supposed to remove those, but still...
+	if(/^L/o){
+	  $specifier = $PS_L;
+	  s/^L//o;
+	} elsif(/^B/o){
+	  $specifier = $PS_B;
+	  s/^B//o;
+	} elsif(!/^[א-ת]/o){
+	  next; # not a word
+	} elsif(/-$/o){
+	  # In wolig.pl's simple output (without -d), this specified smichut,
+	  # and we shouldn't allow prefixes with he hayedia. This case is
+	  # useful for smichut words in extrawords.
+	  $specifier = $PS_NONDEF;
+	  s/-$//o;
+	} elsif(/ פ,/o) {
+	  if(/ .*ציווי/o) {
+		$specifier = $PS_IMPER;
+	  } elsif(!/ .*הווה/o) {
+		$specifier = $PS_VERB;
+	  } elsif(/ .*סמיכות/o || m:,כינוי/:o) {
+		$specifier = $PS_NONDEF;
+	  } else {
+		$specifier = $PS_ALL;
+	  }
+	} elsif(/[ ,][עת],/) {
+	  if (/ .*סמיכות/o || m:,של/:o || / .*פרטי/o) {
+		$specifier = $PS_NONDEF;
+	  } else {
+		$specifier = $PS_ALL;
+	  }
+	} else {
+	  $specifier = $PS_ALL;
+	}
+	s/ .*$//;	# remove all the "-d" explanations after the word
+	$specifiers{$_} |= $specifier;
+}
+
+my @words = sort(keys %specifiers);
+
+my $F = new IO::File;
+$F->open($out_prefixes,"w") or croak "Couldn't write -p parameter '$out_prefixes'";
+print $F map { chr($specifiers{$_}) } @words;
+print map { $_."\n" } @words;
+
+
+exit 0;

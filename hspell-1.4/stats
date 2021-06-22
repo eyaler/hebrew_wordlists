@@ -1,0 +1,58 @@
+#!/bin/sh
+unset LANG LC_CTYPE LC_ALL LC_COLLATE
+make
+echo
+
+echo "Statistics on input files:"
+echo "--------------------------"
+echo -n "wolig.dat: "
+echo -n `grep " ע" wolig.dat | grep -vc "^#"`
+echo -n " noun lines, "
+echo -n `grep " ת" wolig.dat | grep -vc "^#"`
+echo " adjective lines."
+echo -n "woo.dat: "
+echo -n `grep " פ" woo.dat | grep -vc "^#"`
+echo " verb lines."
+echo -n "shemp.dat: "
+echo -n `grep " ע" shemp.dat | grep -vc "^#"`
+echo " auto-generated gerunds."
+echo -n "misc data lines:" `egrep -hcv "^[-#]|^$" extrawords.hif` "extrawords, "
+echo -n `grep -hcv "^[-#]" milot.hif` "milot, "
+echo -n `grep -hcv "^[-#]" biza-verbs.hif` "bizaverbs, "
+echo `grep -hc "^[-#]" biza-nouns.hif` "bizanouns. "
+
+echo
+
+echo "Unique baseword counts:"
+echo "-----------------------"
+NN=`grep -h " ע" wolig.dat shemp.dat | sed "/^#/d;s/ *#.*$//" | sort -u | wc -l`
+NN1=`grep -h " ע" wolig.dat shemp.dat | sed "/^#/d;s/ *#.*$//" | sort -u | grep -vc "ע$"`
+NN2=`sed "s/#.*$//" < wolig.dat | egrep ",(זכר|נקבה)" | grep "ע,"| wc -l`
+NN3=`grep -h " ע" wolig.dat shemp.dat | sed "/^#/d;s/ *#.*$//" | sort -u | egrep ",(יחיד|רבים|ות|ים|יים|אות)" |wc -l`
+echo Nouns: $NN "(of" them, $NN3 need plural hints, $NN1 need inflection hints, $NN2 explicit "gender)."
+
+VV=`grep -c -- ---- verbs.hif`
+echo Verbs: $VV
+
+AA=`grep " ת" wolig.dat | grep -v "^#" | sed "s/ *#.*$//" | sort -u | wc -l`
+echo Adjectives: $AA
+
+EE=`grep -hv "^[-#]" extrawords.hif milot.hif biza-verbs.hif biza-nouns.hif |  sed "s/ *#.*$//" | tr -d - | sort -u | wc -l`
+echo Other words: $EE
+echo
+echo Total number of base words - `expr $NN + $VV + $AA + $EE`
+
+echo
+echo "Final word count:"
+echo "-----------------"
+
+# we can count words in hebrew.wgz even without compiling wunzip :)
+WW=`zcat hebrew.wgz | tr [0-9] '\012' | grep -vc "^$"`
+echo Unique words in hebrew.wgz: $WW
+echo "Dictionary file sizes (in bytes):"
+wc -c hebrew.wgz*
+echo "Memory use (spell-checker only):"
+gzip -dc hebrew.wgz | ./find_sizes >/dev/null
+
+# NOTE: to find duplicates in wolig.dat:
+# grep " ע" wolig.dat | grep -v "^#"| sed "s/ *#.*$//"|sort |uniq -c | sort -n | less

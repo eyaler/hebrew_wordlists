@@ -1,0 +1,464 @@
+Release 1.4 (June 24, 2017)
+
+ * This month, the Academy of the Hebrew Language published a new version
+   of their niqqud-less spelling standard, with some important changes from
+   the old rules - mostly adding yod and waw in additional places.
+   This version of Hspell will be the last one following the previous
+   spelling standard. The next release will be named "2.0" and will follow
+   the new spelling standard.
+
+ * The niqqudless.odt document, which describes (in Hebrew) Hspell's
+   spelling standard, is finally complete at 110 pages. There is still room
+   for improvement and more content to expect in the next releases, but the
+   current document no longer has any major holes, and discusses the majority
+   of spelling issues that we've encountered while developing Hspell.
+
+ * Vocabulary: 469,509 words (when built with "--enable-fatverb")
+               based on 24534 base words: 12929 nouns, 3897 adjectives,
+               5269 verb stems, and 2439 other words.
+
+Release 1.3 (February 25, 2015)
+
+ * Some spelling inaccuracies fixed, and 400 base words added.
+
+ * Continued to improve the niqqudless.odt document, which describes (in
+   Hebrew) Hspell's spelling standard. The document is still a draft, but
+   is already over 100 pages, discusses the majority of spelling issues
+   we've encountered while developing Hspell, and is a good place to turn to
+   if you're not sure why Hspell expects you to spell a particular word
+   in a particular way.
+
+ * Vocabulary: 468,508 words (when built with "--enable-fatverb")
+               based on 24495 base words: 12908 nouns, 3889 adjectives,
+               5261 verb stems, and 2437 other words.
+
+Release 1.2 (February 28, 2012)
+
+ * Some incorrect words purged or fixed, and 600 base words added.
+
+ * Continued to improve the niqqudless.odt document, which describes Hspell's
+   spelling standard. The document is still incomplete, but is already over
+   80 pages long and may already explain spelling issues you've been
+   pondering - so take a look!
+
+ * Fixed bugs which could cause the "hspell" command to core-dump on some
+   words with a lot of apostrophes (because they were confused with gimatria),
+   and hspell_trycorrect() to core-dump on an empty word.
+
+ * Fixed a bug which caused us to accept a definite article on verbs with
+   objects, e.g., הכובשן.
+
+ * The "myspell" target was removed, as this format has been all but abandoned
+   in recent years. Use "make hunspell" instead.
+
+ * The "hunspell" target used to use a utility called "doubleaffixcompress"
+   to make the dictionary smaller. This utility is in fact broken, and is no
+   longer used in this release - resulting in bigger, but more correct
+   hunspell-format dictionaries.
+
+ * In previous releases, generated hunspell and aspell dictionaries incorrectly
+   accepted bare infinitive verbs, e.g., ישון. This is fixed in this release
+   for hunspell dictionaries, using the hunspell-specific NEEDAFFIX feature.
+   Unfortunately, aspell does not have this feature, so the aspell dictionary
+   still has this bug. Added a "make test" to test this bug.
+
+ * The "--enable-aspell" configure parameter was removed - use "make aspell"
+   instead. Also added a "make he.rws" target to build he.rws from he.wl.
+   See the INSTALL file for more information about building Hebrew
+   dictionaries for various multilingual spell-checkers.
+
+ * Added new "--enable-shared" configure parameter to build a shared library
+   libhspell.so, which would be used when compiling the "hspell" tool.
+
+ * Vocabulary: 464,725 words (when built with "--enable-fatverb")
+               based on 24082 base words: 12718 nouns, 3786 adjectives,
+               5244 verb stems, and 2334 other words.
+
+-----------------------------------------------------------------------------
+
+Release 1.1 (December 31, 2009)
+
+ * Some incorrect words purged or fixed, and 900 base words added.
+
+ * This release introduces a new a document (in Hebrew), niqqudless.odt,
+   which explains in detail Hspell's spelling standard, and why Hspell
+   spells some words the way it does. If you ever wondered whether
+   (or why) Hspell's spelling is justified, this is the document for you.
+   This first release is still far from explaining all of the spelling
+   questions that we have encountered while developing Hspell, so be on
+   the lookout for newer releases of this document on Hspell's website.
+   On the website, you can also find the same document in alternative
+   formats, such as PDF; The source package contains only the source of
+   the document, in OpenOffice format.
+
+ * Fixed some makefile errors, and modernized some makefile targets.
+
+ * The myspell dictionary created by "make myspell" now uses a different
+   encoding, and as result loads as much as 10 times faster in the
+   "hunspell" multilingual spell-checker.
+   Also added a new makefile target "hunspell", which generates a dictionary
+   especially for hunspell, which is smaller and uses less memory than the
+   myspell dictionary.
+
+ * Vocabulary: 461,326 words (when built with "--enable-fatverb")
+               based on 23486 base words: 12445 nouns, 3583 adjectives,
+               5242 verb stems, and 2216 other words
+
+-----------------------------------------------------------------------------
+
+Release 1.0 (May 16, 2006):
+
+ * Some incorrect words purged or fixed, and many more words added:
+   1,500 base words added.
+
+ * Fixed small bugs in the generation of dictionaries in the aspell format
+   (for aspell) and myspell format (for Mozilla and OpenOffice), and made
+   these files somewhat smaller.
+
+ * New "hebeng" make target, which generates an xpi file like the "mozilla"
+   target, but instead of taking only the Hebrew word list, it merges it
+   with another English word list. This can allow mixed Hebrew-English
+   spell-checking in Mozilla.
+
+ * When Hspell was given Hebrew words with niqqud (in the cp1255 encoding)
+   it used to incorrectly split them on the niqqud characters. Now it
+   collects the entire word, with its niqqud, and by default considers it
+   to be an error (as Hspell cannot check its correctness). To accept
+   this voweled word as correct, you can add it to your personal dictionary.
+
+ * Hspell is part of Fedora Extras and is available in places such as
+   http://download.fedora.redhat.com/pub/fedora/linux/extras/4/SRPMS/.
+   To save the pain of maintaining two RPM packages, the hspell.spec file
+   was removed form the tarball.
+
+ * A new "-vv" option prints some information on optional Hspell features
+   enabled at compile time. It can be used, for example, to check if
+   morphological analysis has been enabled, by checking
+       hspell -vv | grep -q LINGINFO
+
+ * Small bug fixes and manual page improvements.
+
+ * Vocabulary: 455,043 words (when built with "--enable-fatverb")
+               based on 22589 base words: 11724 nouns, 3297 adjectives,
+               5223 verb stems, and 2345 other words
+
+-----------------------------------------------------------------------------
+Release 0.9 (January 13, 2005):
+
+ * Some incorrect words purged or fixed, and many more words added: almost
+   2,500 base words added.
+
+ * Continued the effort to export Hspell's dictionary (word list and valid
+   prefix information) to formats used by other spell-checking frameworks.
+   The "aspell" make target finally works correctly, and was used to generate
+   a Hebrew dictionary for Aspell 0.6 (ftp://ftp.gnu.org/gnu/aspell/dict/he/).
+   A new "myspell" target generates a dictionary in Myspell format, suitable
+   for use in OpenOffice and Mozilla. The "mozilla" target prepares an xpi
+   package for Mozilla out of that dictionary.
+
+ * C API improvements: New hspell_set_dictionary_path() function to tell
+   Hspell where its dictionaries were installed. Fixed bug on UTF8 locales
+   and removed spurious printouts.
+
+ * "Hspell -a" (ispell-like pipe API) improvements: words can now be added to
+   personal dictionary. This means that the "Add word" in KDE, LyX, and other
+   Hspell-using applications will finally work.
+
+ * Fixed errors in the morphological analyzer ("-l" option, when built
+   with --enable-linginfo). Also, now if the "-l" and "-c" options are given
+   together to hspell, morphological analysis is given also for correction
+   suggestions, and those are given even for words which are already correct.
+
+ * Fixed many other bugs. Check out http://ivrix.org.il/bugzilla/.
+
+ * Vocabulary: 445,081 words (when built with "--enable-fatverb")
+               based on 21087 base words: 10728 nouns, 3008 adjectives,
+               5207 verb stems, and 2144 other words
+
+-----------------------------------------------------------------------------
+Release 0.8 (June 21, 2004):
+
+ * Some incorrect words purged or fixed, and many more words added: almost
+   2,000 base words added.
+
+ * Reorganized and simplified directory structure of source distribution,
+   and added "autoconf" configuration (use "configure" before "make").
+
+   See "configure --help" for a list of build-time options, such as to enable
+   more verb forms and to enable a morphological analyzer for the "-l" option.
+   See the INSTALL file for more instructions.
+
+   The old Perl "hspell.pl", deprecated in release 0.6, is now gone.
+
+ * If available, use zlib instead of an external gzip process to read the
+   compressed dictionaries. On our tests, this reduced startup time 2-6 fold.
+   It also allows the Hspell API to be used on systens where pipes or
+   gzip are not available, but zlib is (namely, Windows).
+
+ * Improved Hspell's C api. There is a new function hspell_uninit() for
+   reclaiming memory allocated by hspell_init(), and all exit() calls
+   were purged from the Library (printouts are still there, unfortunately).
+
+   NOTE: Because Hspell now uses zlib (see above), when using the libhspell.a
+   library you must now also link with the zlib (-lz) library. This is
+   especially important to remember when looking for libhspell in your own
+   configure scripts.
+
+ * Fixed a few bugs: in morphological analyzer, handling of files without
+   a newline, and more.
+
+ * It is now possible to use Hspell's Hebrew word list (and valid prefix
+   information) in the upcoming versions of the Aspell spell-checker.
+   A new build option, "configure --enable-aspell", creates the two files
+   "he.cwl" and "he_affix.dat" which can then be used to build Aspell's
+   Hebrew dictionary.
+
+   We would like to thank Kevin Atkinson and Kevin Patrick Scannell for
+   their efforts in fixing Aspell's affix support, and making Aspell a
+   viable multi-lingual spell-checker.
+
+ * Vocabulary: 425,709 words (when including kinuyim on verbs)
+               based on 8935 nouns, 2181 adjectives, 5192 verb stems, and
+	       2289 other words
+
+
+-----------------------------------------------------------------------------
+Release 0.7 (December 22, 2003):
+
+ * Some incorrect words purged or fixed, and many more words added: over
+   1,000 base words added.
+
+ * Portability improvements (thanks to Baruch Even).
+
+ * New run-time option -H causes hspell to accept He Ha-she'ela in the text.
+
+ * The "-n" option (for spelling hints, an explanation of certain kinds of
+   errors) that was lost in version 0.6, is now back. The "likelyerrors"
+   feature is still missing in this version.
+
+ * A new, and somewhat tentative, Documented C API (libhspell.a library,
+   spell.h header, hspell.3 manual). This are not available in the normal
+   RPM - compile the sources yourself if you want them.
+
+ * A full morphological analyzer (explaining all the possible ways to read
+   a given word, how each reading was derived and its syntactic properties)
+   is now available when Hspell is run with the "-l" option.
+
+   Because the data files needed for this feature currently take up as much
+   as 4 times the space needed only for spell-checking, and because the
+   collection and sorting of linguistic information makes the compilation
+   takes much longer, this feature is not compiled by default, unless
+   compilation is done with "make linginfo". Also, the normal RPM does not
+   include this feature, but the "fat" RPM does include it.
+   An innovative parade of hash symbols now appears on screen to the benefit
+   of the bored builder :)
+
+ * Vocabulary: 406,629 words (when including kinuyim on verbs)
+               based on 8042 nouns, 1783 adjectives, 5113 verb stems, and
+	       1880 other words
+
+-----------------------------------------------------------------------------
+Release 0.6 (August 5, 2003):
+
+ In this release, the Hspell front-end (the hspell program) was rewritten.
+ The new front-end has many improvements over the old one, but also a few
+ setbacks - features that are (temporarily) unavailable because they weren't
+ yet ported to the new version.
+
+ The improvements:
+
+ * A huge performance improvement - hspell now starts up, and runs, at least
+   20 times faster than it used to and takes less than one fifth the memory.
+
+ * The new front-end is written in C, so Hspell can now run on systems which
+   do not have Perl. Perl is still needed for building Hspell from source.
+
+ * The list of allowed prefixes was improved (joined work with Shlomo Yona)
+   and hspell now finally knows which prefixes are valid for most words,
+   reducing the risk of accepting misspellings as correct and reducing the
+   number of silly (and wrong) correction suggestions.
+
+   Note that unlike earlier versions, words listed in the user's personal
+   dictionary (~/.hspell_words or ./hspell_words) are no longer automatically
+   accepted with prefixes. Also, these words are never used as suggested
+   corrections.
+
+
+ * "hspell -a" was made more compatible with the standard "ispell -a" (thanks
+   to Mooffie). Hspell is now known to be used with LyX, KDE, Geresh and Emacs.
+
+ The setbacks:
+
+ * The "-v" option, that used to explain how valid words were derived, is
+   no longer available in this version. It is replaced by a "-l" option,
+   which in this release is weaker (it can only show a division of valid
+   words into prefix particle + word).
+
+ * The "-n" option, that used to give hints on how to spell correctly, is
+   not available.
+
+ * The "likelyerrors" feature (or recognizing certain words as theoretically
+   correct but still very likely to be mistakes) is not available.
+
+ * TeX-like repeated single quote ('') is not treated as double quotes (").
+
+ * Long options (GNU's "minus-minus" options) are not supported in this
+   version.
+
+ Some other changes:
+
+ * Included in the distribution is a new utility "multispell" by Mooffie,
+   which can spell-check mixed Hebrew-English text by interfacing with two
+   spell-checkers (hspell and ispell) simultaneously. Multispell is better
+   than hspell's built-in slave mode (hspell -a -i) when the calling program
+   can't deal with wrong word order in the results (e.g., Emacs has this
+   issue.)
+
+ * Some incorrect words purged or fixed, and more words added: over 600
+   base words added.
+
+ * Vocabulary: 394,833 words (when including kinuyim on verbs)
+               based on 7462 nouns, 1533 adjectives, 5060 verb stems, and
+	       1819 other words
+
+
+-----------------------------------------------------------------------------
+Release 0.5: (May 8, 2003)
+ * Some incorrect words purged or fixed, and many more words added: about
+   2,000 base words added.
+
+ * Objective Kinuim are now allowed on all forms of verbs. Because this adds
+   as many as 150,000 correct but rarely-used (in modern texts) inflections,
+   a compile-time option is present for enabling or disabling these forms.
+   The default in this version is *not* to enable them, but this may be changed
+   in the future.
+   Also, precompiled RPMs of both types are available (thanks to Tzafrir Cohen).
+   In order to build the source rpm you must --define in the command-line either
+   'fat 0' or 'fat 1'. Can anyone tell me how can I set a default for that?
+
+ * Infinitives now allow בכלמ prefixes, not just ל: לשבור, בשבור, כשבור, משבור.
+
+ * Added a "-d" option to the word-list generators, which prints derivation
+   explanation for all inflections, and also gender information for all nouns.
+   This feature is not presently used for spell-checking.
+
+ * Bug fixes: B-words were ignored unless "-v" was used; gimatria checking
+   failed to recognize numbers ending in 17-19;
+
+ * fixed "ispell -a"'s handling of "^..." lines that prevented Hspell from
+   working properly with KDE (thanks to Meni Livne).
+
+ * Vocabulary: 390,846 words (when including kinuyim on verbs)
+               based on 7125 nouns, 1484 adjectives, 4801 verb stems, and
+	       1799 other words
+
+-----------------------------------------------------------------------------
+Release 0.4: (March 10, 2003)
+
+ * Some incorrect words purged or fixed, and many more words added: over
+   2,300 base words and 60,000 inflections.
+   Thanks to Orna Agmon for reporting some of the missing words.
+
+ * Complete overhaul of the hspell homepage
+   (http://www.ivrix.org.il/projects/spell-checker/).
+   Also, the site now features signed RPMs, and the spec used to make them
+   is included in the source distribution. The current binary RPM includes the
+   dictionary compressed with a special algorithm, making it, and the final
+   installation, very small (as little as 100K), at the expense of the "-v"
+   option not working.
+   Thanks to Tzafrir Cohen and Oron Peled for the initial version of the spec.
+
+ * Shem Poal Natuy + Kinuy for all verbs, things like: ותבשב ,יננטצהב
+   There is probably an error in the conjugation of these Shmot Poal from Binyan
+   Qal. woo creates בזוכרנו, while the strict rules say it should be בזכרנו.
+   This would be settled by the next release.
+
+ * Added "-i" option, to be used in addition to "-a" from within other
+   programs (e.g. LyX) to allow spell-checking of mixed English-Hebrew text
+   by using ispell for the English words. The new program "hspell-i" runs
+   hspell with the -i option, so it can be used in (for example) LyX as
+   the spellchecker. (thanks to Alon Altman)
+
+ * Long options, and new --help and --version options. (thanks to Tzafrir Cohen)
+
+ * Vocabulary: 250,027 words
+               based on 6238 nouns, 1174 adjectives, 4584 verb stems, and
+	       1291 other words
+
+-----------------------------------------------------------------------------
+Release 0.3: (February 2, 2003)
+
+ * Some incorrect words purged or fixed, and many more words added: over
+   1,000 base words and 20,000 inflections. In this release, emphasis has
+   been put on adding Hebrew nouns and adjectives.
+
+ * Fixed Makefile behavior in certain case. In particular "make" should work
+   regardless of LC_* environment variables. However, as hspell currently
+   works on iso8859-8 encoded files, users with a utf8 locale must run the
+   "hspell" perl program as "LC_ALL=C hspell" (otherwise, they will see
+   error messages from Perl).
+
+ * Added ispell-like "-a" option, for interfacing with LyX.
+   If you want to use hspell under LyX you should use Hebrew-enabled LyX
+   (version 1.1.6fix4 is known to work). Add the following line to your
+   .lyx/lyxrc file:
+	\spell_command hspell
+   Notice that this prevents using English ispell/aspell from within LyX.
+   If you know of a better configuration, please tell us.
+   Notice that if a Hebrew misspelled word is found, it is shown reversed on
+   LyX's spellchecker (and so are its corrections). This is about to be
+   corrected in future releases of LyX. Also, LyX breaks Hebrew acronyms
+   wrongly, and causes hspell to reject them.
+
+   Read http://www.math.tau.ac.il/~dekelts/lyx/instructions2.html for
+   Hebrew LyX general instructions.
+
+ * No longer incorrectly recognize שלווום (should be שלוום, "that to their
+   hook").
+
+ * The wolig.pl automatic inflector can handle country names, and many more
+   country names and nationalities have been added. Note that since I did
+   not find a source for "official" country-name spellings in Hebrew, our
+   list might contain errors. Please tell us if you know a dictionary or other
+   authoritative document which contains the official Hebrew spellings of
+   country names.
+
+ * Vocabulary: 189,347 words
+               based on 5238 nouns, 927 adjectives, 3568 verb stems, and
+	       1203 other words
+
+-----------------------------------------------------------------------------
+Release 0.2: (January 5, 2003)
+ * Many more nouns, verbs, and other words: around 2500 new base words, and
+   40,000 inflections. Emphasis has been given to adding *common* words that
+   will appear in typical, modern, documents.
+ * Several incorrect words purged or fixed.
+ * Wolig.pl (noun inflector) overhaul to better and more consistently handle
+   niqqud-less (ktiv male) spelling rules, and to be able to theoretically
+   handle at least 99.9% of the Hebrew nouns (of course, we don't have all of
+   them in the dictionary, yet :)).
+ * -n option to hspell program, which gives longer (human-written) explanations
+   on certain spelling errors - especially common niqqud-less spelling errors.
+ * Read additional accepted words from ~/.hspell_words and/or ./hspell_words
+ * Kinuim Khavurim (possesive suffixes) are recognized on the infinitive forms
+   of the verb.
+ * Added manual page, hspell(1)
+ * Improved Makefile (thanks to Oron Peled) and made other changes to the
+   distribution (thanks to Baruch Even) for more easily building binary
+   packages of hspell.
+
+ * Vocabulary: 169,266 words
+               based on 4505 nouns, 645 adjectives, 3407 verb stems, and
+	       1237 other words
+
+-----------------------------------------------------------------------------
+Release 0.1: (first public release - December 13, 2002)
+
+ * Vocabulary: 125,022 words
+               based on 3206 nouns, 452 adjectives, 2712 verb stems, and
+	       980 other words
+
+ * In this release we would like to thank Uwe Brauer and Michael Lugassy for
+   "convincing" us to start and to advance this project when we were almost
+   ready to give up.
+   See more acknowledgments in the README file.
