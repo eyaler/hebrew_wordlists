@@ -23,9 +23,11 @@ palin_anad = sorted(list(dict.fromkeys(palin_anad)))
 palin[-1] = palin[-1].strip()
 anad[-1] = anad[-1].strip()
 palin_anad[-1] = palin_anad[-1].strip()
+maxp = max(len(x.strip().replace('"','').replace("'",'').replace('-','')) for x in palin)
+maxa = max(len(x.strip().replace('"','').replace("'",'').replace('-','')) for x in anad)
+print('longest palindromes with %d chars:'%maxp, [x.strip() for x in palin if len(x.strip().replace('"','').replace("'",'').replace('-',''))==maxp])
+print('longest anadromes with %d chars:'%maxa, [x.strip() for x in anad if len(x.strip().replace('"','').replace("'",'').replace('-',''))==maxa])
 print('palin=%d anad=%d both=%d'%(len(palin),len(anad),len(palin)+len(anad)))
-maxlen = max(len(p.strip().replace('"','').replace("'",'').replace('-','')) for p in palin)
-print('longest palins with %d chars:'%maxlen, [p.strip() for p in palin if len(p.strip().replace('"','').replace("'",'').replace('-',''))==maxlen])
 with open('palindromes%s.txt'%prefix,'w',encoding='utf8') as f:
     f.writelines(palin)
 with open('anadromes%s.txt'%prefix,'w',encoding='utf8') as f:
