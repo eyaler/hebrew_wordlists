@@ -51,4 +51,15 @@ assert lengths['all_with_fatverb_append_some_prefixes.txt'] == lengths[
            'all_append_fatverb_before_append_some_prefixes.txt'], (
     lengths['all_with_fatverb_append_some_prefixes.txt'], lengths['all_append_fatverb_after_append_some_prefixes.txt'],
     lengths['all_append_fatverb_before_append_some_prefixes.txt'])
-assert len(head_mid_tails) == len(lengths), (len(head_mid_tails), len(lengths))
+
+assert len(head_mid_tails) == len(lengths), (len(head_mid_tails), len(lengths)) # check that no files are identical
+
+#check readonly
+for file in sorted(os.listdir()):
+    if not file.endswith('.txt'):
+        continue
+    try:
+        open(file, 'a', encoding='utf8')
+    except Exception:
+        continue
+    assert False, file+' is not readonly'
