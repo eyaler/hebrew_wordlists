@@ -10,7 +10,8 @@ for file in sorted(os.listdir()):
         continue
     with open(file, encoding='utf8') as f:
         text = f.read()
-        print(file)
+        lines = text.split('\n')
+        print(file, len(lines))
 
         bad = re.search(r'[\d]', file)
         assert not bad, bad  # no digits which may signify temporary files
@@ -18,7 +19,6 @@ for file in sorted(os.listdir()):
         bad = re.search('[^' + heb + '\'"\n'+('-' if 'prefixes' in file else '')+']', text)
         assert not bad, bad  # no non-hebrew chars
 
-        lines = text.split('\n')
         head_mid_tails.add(tuple(lines[:head_mid_tail_len] + lines[len(lines)//2-head_mid_tail_len//2:len(lines)//2-head_mid_tail_len//2+head_mid_tail_len] + lines[-head_mid_tail_len:]))
 
         empty = sum(not line.strip() for line in lines)
