@@ -63,6 +63,9 @@
 
 - [שמות פרטיים בישראל](https://data.gov.il/dataset/firs-name) (israeli_first_names.txt, נשלף ביוני 2021) שמשום מה נעדר ממנה השם השני שלי...
 
+- [שמות משפחה בישראל](https://www.cbs.gov.il/he/mediarelease/Pages/2019/שמות-משפחה-בישראל-2017.aspx
+) (israeli_family_names.txt). מכיל רווחים ומקפים 
+
 - תנ"ך (bible.txt)
 
 </div>

@@ -16,7 +16,7 @@ for file in sorted(os.listdir()):
         bad = re.search(r'[\d]', file)
         assert not bad, bad  # no digits which may signify temporary files
 
-        bad = re.search('[^' + heb + '\'"\n'+('-' if 'prefixes' in file else '')+']', text)
+        bad = re.search('[^' + heb + '\'"\n'+('-' if 'prefixes' in file else '')+(' -' if 'family' in file else '')+']', text)
         assert not bad, bad  # no non-hebrew chars
 
         head_mid_tails.add(tuple(lines[:head_mid_tail_len] + lines[len(lines)//2-head_mid_tail_len//2:len(lines)//2-head_mid_tail_len//2+head_mid_tail_len] + lines[-head_mid_tail_len:]))
