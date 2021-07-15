@@ -13,7 +13,6 @@ max_line_chars_allowed = 0
 
 file = 'd:/data/text/heb/cc100_he.txt' # http://data.statmt.org/cc-100/
 
-corpus = file.rsplit('/', 1)[-1].split('_')[0]
 heb_tokenizer = HebTokenizer()
 words = Counter()
 i = 0
@@ -25,7 +24,10 @@ max_line_chars = 0
 max_line_words = 0
 max_line_words_counter = Counter()
 lines_above_max_chars_allowed = 0
-with open(file, encoding='utf8') as f, open('d:/data/text/heb/%s_rejected_lines.txt'%corpus, 'w', encoding='utf8') as fbad:
+corpus = file.rsplit('/', 1)[-1].split('_')[0]
+rejected_lines_file = 'd:/data/text/heb/%s_rejected_lines.txt'%corpus
+rejected_words_file = '%s_rejected_words.csv'%corpus
+with open(file, encoding='utf8') as f, open(rejected_lines_file, 'w', encoding='utf8') as fbad:
     for line in f:
         i+=1
         if i%1000000==0:
@@ -55,13 +57,23 @@ with open('%s.csv'%corpus, 'w', encoding='utf8') as f:
         sum_cnt += cnt
         label = str(cnt) if cnt<10 else '10+'
         cnt_counter[label] += 1
-        f.write('%s,%d%s'%(word, cnt, '\n' if i<len(words) else ''))
+        f.write('%s,%d%s'%(word, cnt, '\n' if i<len(words)-1 else ''))
 
 skip_cnt = 0
-with open('%s_rejected_words.csv'%corpus, 'w', encoding='utf8') as csv:
-    for word, cnt in sorted(skip_words.items(), key=lambda x: (-x[1], x[0])):
-        csv.write('%s,%d\n'%(word, cnt))
-        skip_cnt += cnt
+if skip_lines:
+    with open(rejected_words_file, 'w', encoding='utf8') as csv:
+        for word, cnt in sorted(skip_words.items(), key=lambda x: (-x[1], x[0])):
+            csv.write('%s,%d\n'%(word, cnt))
+            skip_cnt += cnt
+else:
+    try:
+        os.remove(rejected_lines_file)
+    except Exception:
+        pass
+    try:
+        os.remove(rejected_words_file)
+    except Exception:
+        pass
 
 total_words = skip_cnt+sum_cnt
 print('len_counter:', len_counter.most_common())
@@ -71,6 +83,8 @@ print('corpus=%s total_lines=%d total_words=%d used_lines=%d (%.2f) used_words=%
       (corpus, i, total_words, i-skip_lines, (i-skip_lines)/i, sum_cnt, sum_cnt/total_words, len(words), skip_lines, skip_lines/i, skip_cnt, skip_cnt/total_words, lines_above_max_chars_allowed, max_line_chars, max_line_chars_ind, max_line_words, max_line_words_ind))
 
 '''
+see write-up for more details: https://www.facebook.com/groups/157877988136954/posts/884622782129134
+
 cc100:
 len_counter: [('10+', 79051694), ('2', 24775417), ('3', 21289633), ('4', 16996423), ('0', 13244077), ('5', 13205121), ('6', 11153959), ('7', 9513575), ('8', 8386870), ('9', 6987521), ('1', 2938629)]
 cnt_counter: [('1', 1955668), ('10+', 1060950), ('2', 600957), ('3', 298162), ('4', 190193), ('5', 132969), ('6', 101706), ('7', 91693), ('8', 66981), ('9', 55158)]
