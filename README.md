@@ -24,7 +24,7 @@
 
 <h2>מיון</h2>
 	
-כל הרשימות שאין בשמן "append" ממויינות לפי סדר לקסיקוגרפי הוא סדר המיון בפייתון, ב-++notepad, ובלינוקס עם LC_ALL=C
+כל הרשימות שאין בשמן "append" ולא צוין אחרת, ממוינות לפי סדר לקסיקוגרפי הוא סדר המיון בפייתון, ב-++notepad, ובלינוקס עם LC_ALL=C
 
 <h2>סופיות מושא ישיר</h2>
 	
@@ -61,10 +61,14 @@
 
 <h2>רשימות נוספות</h2>
 
+- [CC-100](http://data.statmt.org/cc-100) קורפוס שנחצב מהרשת בן 33GB. המילים חולצו באמצעות [טוקנייזר שלי](https://github.com/eyaler/hebrew_tokenizer) שזורק בן השאר ראשי תיבות וקיצורים. כולל ספירות וממוין לפיהן
+
 - [שמות פרטיים בישראל](https://data.gov.il/dataset/firs-name) (israeli_first_names.txt, נשלף ביוני 2021) שמשום מה נעדר ממנה השם השני שלי...
 
 - [שמות משפחה בישראל](https://www.cbs.gov.il/he/mediarelease/Pages/2019/שמות-משפחה-בישראל-2017.aspx
 ) (israeli_family_names.txt). מכיל רווחים ומקפים 
+
+- [שמות ישובים בישראל](https://data.gov.il/dataset/citiesandsettelments) (israeli_place_names.txt, נשלף ביולי 2021) כולל נפות ומועצות. מכיל רווחים ומקפים  
 
 - תנ"ך (bible.txt)
 
@@ -72,7 +76,17 @@
 
 <h2>Todo</h2>
 
-- add palindrome/anadrome lists using ALL possible hebrew prefixes
+- Cross hspell and cc100
+
+- Palindromic bigrams
+
+- Separate nouns_adjectives.txt into nouns and adjectives
+
+- Add base form lists for verbs and nouns 
+
+- Add palindrome/anadrome lists using ALL possible hebrew prefixes
+
+- Allow CC-100 words to include acronyms and abbreviations
 
 <h2>Remarks</h2>
 

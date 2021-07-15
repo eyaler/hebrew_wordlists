@@ -1,13 +1,17 @@
-prefixes = ['', '_with_some_prefixes']#, '_with_all_prefixes', '_with_all_prefixes_with_he_hasheela'] # note the last two files are 1.5GB and 2.2GB strong so they are not included in the repo
+import os
 
-for prefix in prefixes:
+files = ['israeli_first_names.txt', 'bible.txt', 'cc100.csv', 'all_with_fatverb.txt', 'all_with_fatverb_with_some_prefixes.txt']#, 'all_with_fatverb_with_all_prefixes.txt', 'all_with_fatverb_with_all_prefixes_with_he_hasheela.txt'] # note the last two files are 1.5GB and 2.2GB strong so they are not included in the repo
+min_cnt = 1
+
+for file in files:
     palin = []
     anad = []
     palin_anad = []
-    file = 'all_with_fatverb%s.txt'%prefix
     with open(file, encoding='utf8') as f:
         lines = f.readlines()
-        clean_lines = [line.strip().replace('"','').replace("'",'').replace('-','').replace('ך','כ').replace('ם','מ').replace('ן','נ').replace('ף','פ').replace('ץ','צ') for line in lines]
+        if file.endswith('.csv'):
+            lines = [line.split(',')[0]+('\n' if line.endswith('\n') else '') for line in lines if int(line.split(',')[1])>=min_cnt]
+        clean_lines = [line.strip().replace('"','').replace("'",'').replace('-','').replace(' ','').replace('ך','כ').replace('ם','מ').replace('ן','נ').replace('ף','פ').replace('ץ','צ') for line in lines]
         clean_lines_set = set(clean_lines)
         for line, clean in zip(lines, clean_lines):
             if clean==clean[::-1]:
@@ -28,9 +32,10 @@ for prefix in prefixes:
     print('longest palindromes with %d chars:'%maxp, [x.strip() for x in palin if len(x.strip().replace('"','').replace("'",'').replace('-',''))==maxp])
     print('longest proper anadromes with %d chars:'%maxa, [x.strip() for x in anad if len(x.strip().replace('"','').replace("'",'').replace('-',''))==maxa])
     print('palin=%d anad=%d both=%d\n'%(len(palin),len(anad),len(palin)+len(anad)))
-    with open('palindromes%s.txt'%prefix,'w',encoding='utf8') as f:
+    name = os.path.splitext(file)[0]
+    with open(os.path.join('palin_and_anad','palindromes_%s.txt')%name,'w',encoding='utf8') as f:
         f.writelines(palin)
-    with open('anadromes%s.txt'%prefix,'w',encoding='utf8') as f:
+    with open(os.path.join('palin_and_anad','anadromes_%s.txt')%name,'w',encoding='utf8') as f:
         f.writelines(anad)
-    with open('palin_and_anad%s.txt'%prefix,'w',encoding='utf8') as f:
+    with open(os.path.join('palin_and_anad','palin_and_anad_%s.txt')%name,'w',encoding='utf8') as f:
         f.writelines(palin_anad)
