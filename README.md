@@ -84,15 +84,23 @@
 
 (p1) Hierarchical combinations of CC-100 and Hspell
 
-(p2) Split part-of-speech lists by base forms, gender and plurality
+(p1) Filter CC-100 to reduce legal and commercial content (or consider other corpuses)
 
-(p2) Split שמות-פרטיים.xlsx by gender and Jewishness
+(p2) Rerank palindrome/anadrome lists by (joint) counts
 
-(p2) Extract my own bible wordlist 
+(p2) Extract bigrams and counts from CC100    
 
-(p3) Palindrome/anadrome lists using ALL possible hebrew prefixes
+(p3) Split part-of-speech lists by base forms, gender and plurality
 
-(p3) Allow CC-100 words to include acronyms and abbreviations
+(p3) Use the above splits to find palindromic bigrams of sentence form (e.g. noun+adj, noun+verb) and matching gender and plurality (and perhaps definiteness) 
+
+(p4) Extract my own Bible wordlist
+
+(p4) Split שמות-פרטיים.xlsx by gender and Jewishness
+
+(p5) Palindrome/anadrome lists using ALL possible Hebrew prefixes
+
+(p5) Allow CC-100 words to include acronyms and abbreviations
 
 <h2>Remarks</h2>
 
