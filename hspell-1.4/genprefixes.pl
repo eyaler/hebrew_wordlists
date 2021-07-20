@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-require "PrefixBits.pl";
+require "./PrefixBits.pl";
 
 sub find_prefixes {
 	my $INQUISITIVE_HE=shift;

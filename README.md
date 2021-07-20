@@ -1,7 +1,7 @@
 <div dir="rtl">
 <h2>הצהרה ואזהרה</h2>
 
-אין מילון מלבד Hspell ונדב הראל ודן קניגסברג הם נביאי האמת.
+אין מילון מלבד Hspell ונדב הראל ודן קניגסברג הם נביאי האמת
 
 עם זאת, ישנן מספר לקונות שכדאי לקחת בחשבון:
 
@@ -24,7 +24,9 @@
 
 <h2>מיון</h2>
 	
-כל הרשימות שאין בשמן "append" ולא צוין אחרת, ממוינות לפי סדר לקסיקוגרפי הוא סדר המיון בפייתון, ב-++notepad, ובלינוקס עם LC_ALL=C
+קבצי txt. שאין בשמם "append", ממוינים לפי סדר לקסיקוגרפי הוא סדר המיון בפייתון, ב-++notepad, ובלינוקס עם LC_ALL=C
+
+קבצי csv. ממוינים לפי הספירות
 
 <h2>סופיות מושא ישיר</h2>
 	
@@ -59,36 +61,42 @@
 
 וכן שיאים אנדרומיים גם הם באורך 11: הלכשמכמשכלו-ולכשמכמשכלה, הלכשמכמשמשו-ושמשמכמשכלה, ולכשמכמשמשו-ושמשמכמשכלו
 
+צירופים פלינדרומיים 
+
 <h2>רשימות נוספות</h2>
 
-- [CC-100](http://data.statmt.org/cc-100) קורפוס שנחצב מהרשת בן 33GB. המילים חולצו באמצעות [טוקנייזר שלי](https://github.com/eyaler/hebrew_tokenizer) שזורק בן השאר ראשי תיבות וקיצורים. כולל ספירות וממוין לפיהן
+- [CC-100](http://data.statmt.org/cc-100) - קורפוס שנחצב מהרשת בן 33GB. המילים חולצו באמצעות [טוקנייזר שלי](https://github.com/eyaler/hebrew_tokenizer) שזורק בן השאר ראשי תיבות וקיצורים. כולל ספירות וממוין לפיהן
 
-- [שמות פרטיים בישראל](https://data.gov.il/dataset/firs-name) (israeli_first_names.txt, נשלף ביוני 2021) שמשום מה נעדר ממנה השם השני שלי...
+- חיתוכים בין CC-100 ו-Hspell.
+
+- [שמות פרטיים בישראל](https://data.gov.il/dataset/firs-name) (israeli_first_names.txt) מ-2020. מפורק לשמות יחידים. משום מה נעדר השם השני שלי... הערה: [כאן](https://www.cbs.gov.il/he/publications/LochutTlushim/2020/שמות-פרטיים.xlsx) יש שמות לא מפורקים מ-2019 בחלוקות וספירות לפי דת, מגדר ושנת לידה 
 
 - [שמות משפחה בישראל](https://www.cbs.gov.il/he/mediarelease/Pages/2019/שמות-משפחה-בישראל-2017.aspx
-) (israeli_family_names.txt). מכיל רווחים ומקפים 
+) (israeli_family_names.csv, israeli_jewish_family_names.csv) מ-2017. כולם או רק יהודים. מכיל רווחים ומקפים. עם ספירת נפשות וממוין לפיהן 
 
-- [שמות ישובים בישראל](https://data.gov.il/dataset/citiesandsettelments) (israeli_place_names.txt, נשלף ביולי 2021) כולל נפות ומועצות. מכיל רווחים ומקפים  
+- [שמות ישובים בישראל](https://data.gov.il/dataset/citiesandsettelments) (israeli_place_names.txt) מ-7/2021. כולל נפות ומועצות. מכיל רווחים ומקפים  
 
-- תנ"ך (bible.txt)
+- [תנ"ך](https://github.com/openscriptures/morphhb/blob/master/WlcWordList/Words.csv) (bible.txt)
 
 </div>
 
 <h2>Todo</h2>
 
-- Cross Hspell and CC-100
+(p1) Hierarchical combinations of CC-100 and Hspell
 
-- Palindromic bigrams
+(p2) Split part-of-speech lists by base forms, gender and plurality
 
-- Add base form lists for verbs and nouns 
+(p2) Split שמות-פרטיים.xlsx by gender and Jewishness
 
-- Add palindrome/anadrome lists using ALL possible hebrew prefixes
+(p2) Extract my own bible wordlist 
 
-- Allow CC-100 words to include acronyms and abbreviations
+(p3) Palindrome/anadrome lists using ALL possible hebrew prefixes
+
+(p3) Allow CC-100 words to include acronyms and abbreviations
 
 <h2>Remarks</h2>
 
-This file was written using [Markdown Editor](https://jbt.github.io/markdown-editor), the only live editor I found that respects html dir=rtl tags, while retaining markdown semantics inside the div. 
+This file was written using [Markdown Editor](https://jbt.github.io/markdown-editor), the only live editor I found that respects html dir=rtl tags, while retaining markdown semantics inside the div 
 
 <h2>-------------------- Origianl Hspell README below this line --------------------</h2>
 

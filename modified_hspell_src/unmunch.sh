@@ -1,0 +1,1 @@
+perl dodic.pl he.aff he.dic > he.txt

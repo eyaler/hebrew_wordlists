@@ -7,11 +7,11 @@ from collections import Counter
 bad_str = []
 max_line_chars_allowed = 0
 
-#file = 'd:/data/text/heb/oscar_he_dedup.txt' # https://oscar-public.huma-num.fr/shuff-dedup/he
+#file = 'd:/data/text/heb/crawl/raw/oscar_he_dedup.txt' # https://oscar-public.huma-num.fr/shuff-dedup/he
 #bad_str = ['גוגל מפות', '|']
 #max_line_chars_allowed = 4000
 
-file = 'd:/data/text/heb/cc100_he.txt' # http://data.statmt.org/cc-100/
+file = 'd:/data/text/heb/crawl/raw/cc100_he.txt' # http://data.statmt.org/cc-100/
 
 heb_tokenizer = HebTokenizer()
 words = Counter()
@@ -24,8 +24,8 @@ max_line_chars = 0
 max_line_words = 0
 max_line_words_counter = Counter()
 lines_above_max_chars_allowed = 0
-corpus = file.rsplit('/', 1)[-1].split('_')[0]
-rejected_lines_file = 'd:/data/text/heb/%s_rejected_lines.txt'%corpus
+corpus = os.path.basename(file).split('_')[0]
+rejected_lines_file = 'd:/data/text/heb/crawl/raw/%s_rejected_lines.txt'%corpus
 rejected_words_file = '%s_rejected_words.csv'%corpus
 with open(file, 'rb') as f, open(rejected_lines_file, 'wb') as fbad: # use binary mode for correct line splitting (https://stackoverflow.com/questions/56781896/wc-l-and-python-line-count-differ)
     for bline in f:
@@ -53,16 +53,16 @@ with open(file, 'rb') as f, open(rejected_lines_file, 'wb') as fbad: # use binar
             print(i)
 
 sum_cnt = 0
-with open('%s.csv'%corpus, 'w', encoding='utf8') as f:
+with open('%s.csv'%corpus, 'w', encoding='utf8', newline='\r\n') as f:
     for i, (word, cnt) in enumerate(sorted(words.items(), key=lambda x: (-x[1], x[0]))):
         sum_cnt += cnt
         label = str(cnt) if cnt<10 else '10+'
         cnt_counter[label] += 1
-        f.write('%s,%d%s'%(word, cnt, '\n' if i<len(words)-1 else ''))
+        f.write('%s,%d\n'%(word, cnt))
 
 skip_cnt = 0
 if skip_lines:
-    with open(rejected_words_file, 'w', encoding='utf8') as csv:
+    with open(rejected_words_file, 'w', encoding='utf8', newline='\r\n') as csv:
         for word, cnt in sorted(skip_words.items(), key=lambda x: (-x[1], x[0])):
             csv.write('%s,%d\n'%(word, cnt))
             skip_cnt += cnt
